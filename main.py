@@ -22,7 +22,7 @@ train_size = 30
 num_train_per_epoch = 50
 step = 5
 save_period = 20
-meta = not restore_from_saved_model
+write_meta = not restore_from_saved_model
 
 with tf.Session(config=config) as sess:
     main = DeepDeterministicPolicyGradient("main")
@@ -116,9 +116,9 @@ with tf.Session(config=config) as sess:
             print("*** Q_loss: {}".format(exp))
 
             if epoch % save_period == 0:
-                saver.save(sess, save_path, write_meta_graph=meta)
+                saver.save(sess, save_path, write_meta_graph=write_meta)
 
-                if meta:
-                    meta = False
+                if write_meta:
+                    write_meta = False
 
                 print("*** Model was saved successfully.")

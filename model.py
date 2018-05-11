@@ -6,7 +6,7 @@ import numpy as np
 class DeepDeterministicPolicyGradient:
 
     def __init__(self, name, sess=None):
-        self.name = name
+        self._name = name
 
         if sess is None:
             self.sess = tf.get_default_session()
@@ -29,6 +29,10 @@ class DeepDeterministicPolicyGradient:
         self.l_rate_Q = None
         self.l_rate_p = None
         self.train_op = None
+
+    @property
+    def name(self):
+        return self._name
 
     def build(self, view_size):
 
