@@ -1,6 +1,5 @@
 from ResNET.model import *
 from ops import get_soft_update_ops
-import numpy as np
 
 
 class DeepDeterministicPolicyGradient:
@@ -47,15 +46,15 @@ class DeepDeterministicPolicyGradient:
             with tf.variable_scope("critic"):
                 fts_view_Q = create_resnet_18(self.view, 256, self.training, output_activation=tf.nn.elu)
 
-                fts_v_Q = layers.dense(self.v, 64, tf.nn.elu)
-                fts_v_Q = layers.dense(fts_v_Q, 128, tf.nn.elu)
+                fts_v_Q = layers.dense(self.v, 64, tf.nn.elu, kernel_initializer=xavier_initializer())
+                fts_v_Q = layers.dense(fts_v_Q, 128, tf.nn.elu, kernel_initializer=xavier_initializer())
 
-                fts_d_Q = layers.dense(self.d, 64, tf.nn.elu)
-                fts_d_Q = layers.dense(fts_d_Q, 128, tf.nn.elu)
+                fts_d_Q = layers.dense(self.d, 64, tf.nn.elu, kernel_initializer=xavier_initializer())
+                fts_d_Q = layers.dense(fts_d_Q, 128, tf.nn.elu, kernel_initializer=xavier_initializer())
 
                 fts_Q = tf.concat([fts_view_Q, fts_v_Q, fts_d_Q], axis=-1)
 
-                ent_fts = layers.dense(fts_Q, 512)
+                ent_fts = layers.dense(fts_Q, 512, kernel_initializer=xavier_initializer())
                 ent_action = layers.dense(self.action, 512)
                 ent_net = tf.nn.elu(ent_fts+ent_action)
 
@@ -65,15 +64,15 @@ class DeepDeterministicPolicyGradient:
                 fts_view_p = create_resnet_18(self.view, 256, self.training, output_activation=tf.nn.elu)
                 fts_view_p = tf.nn.elu(fts_view_p)
 
-                fts_v_p = layers.dense(self.v, 64, tf.nn.elu)
-                fts_v_p = layers.dense(fts_v_p, 128, tf.nn.elu)
+                fts_v_p = layers.dense(self.v, 64, tf.nn.elu, kernel_initializer=xavier_initializer())
+                fts_v_p = layers.dense(fts_v_p, 128, tf.nn.elu, kernel_initializer=xavier_initializer())
 
-                fts_d_p = layers.dense(self.d, 64, tf.nn.elu)
-                fts_d_p = layers.dense(fts_d_p, 128, tf.nn.elu)
+                fts_d_p = layers.dense(self.d, 64, tf.nn.elu, kernel_initializer=xavier_initializer())
+                fts_d_p = layers.dense(fts_d_p, 128, tf.nn.elu, kernel_initializer=xavier_initializer())
 
                 fts_p = tf.concat([fts_view_p, fts_v_p, fts_d_p], axis=-1)
 
-                self.p_pred = tf.clip_by_value(layers.dense(fts_p, 3), -1., 1.)
+                self.p_pred = tf.clip_by_value(layers.dense(fts_p, 3, kernel_initializer=xavier_initializer()), -1., 1.)
 
             t_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.name)
             critic_vars = [t_var for t_var in t_vars if "critic" in t_var.name]
@@ -109,6 +108,7 @@ class DeepDeterministicPolicyGradient:
     def train(self, view, v, d, Q_real, action, l_rate_Q, l_rate_p):
         action_grads = self.sess.run(self.action_grads, feed_dict={self.view: view, self.v: v, self.d: d, self.action: action, self.training: False})
 
+        # Maybe you do not have to use tensorboard for observing change of critic loss continuously, because anyway you will have to watch moving of drone directly.
         critic_loss, _ = self.sess.run([self.critic_loss, self.train_op],
                                        feed_dict={self.view: view, self.v: v, self.d: d, self.Q_real: Q_real, self.action: action,
                                                   self.action_grads_placeholder: action_grads, self.l_rate_Q: l_rate_Q, self.l_rate_p: l_rate_p, self.training: True})

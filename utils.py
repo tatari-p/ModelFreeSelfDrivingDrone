@@ -6,7 +6,7 @@ def amp(vec):
 
 
 def unit(vec):
-    return vec/amp(vec)
+    return vec/(amp(vec)+1e-6)
 
 
 class ModelFreeAirSimEnv:
@@ -55,7 +55,8 @@ class ModelFreeAirSimEnv:
 
     def hover(self):
         self.client.hover()
-        time.sleep(3)
+        self.client.moveByVelocity(0, 0, 0, 5)
+        time.sleep(2)
 
     def get_position(self):
         p = self.client.getPosition()
@@ -73,12 +74,13 @@ class ModelFreeAirSimEnv:
         return np.array([orient.w_val, orient.x_val, orient.y_val, orient.z_val], dtype="float")
 
     def head_to_target(self):
+        self.target = np.array([np.random.uniform(-150., 150.), np.random.uniform(-150., 150), -10.], dtype="float32")
         z = self.get_position()[2]
         head = self.target-self.init
         angle = np.arctan2(head[1], head[0])
 
-        self.client.moveByAngle(0., 0., z, angle, 10)
-        time.sleep(3)
+        self.client.moveByAngleZ(0., 0., z, angle, 10)
+        time.sleep(2)
 
     def drive(self, action):
         v_before = self.get_velocity()
@@ -87,7 +89,7 @@ class ModelFreeAirSimEnv:
         v_drive = v_drive[2]*np.array([0, 0, 1], dtype="float")+v_drive[1]*head+v_drive[0]*np.array([-head[1], head[0], 0], dtype="float")
 
         forward = self.target-self.get_position()
-        v_offset = unit(unit(forward)-unit(v_before))
+        v_offset = unit(unit(forward)-unit(v_before))       # Galaga method
         v_after = self.scale*(v_offset+v_drive)+v_before
 
         self.client.moveByVelocity(*v_after, 5)
@@ -124,6 +126,7 @@ class ModelFreeAirSimEnv:
             done = True
             print("*** Drone was collided with", collision_info.object_name, "at %.1f from goal" % s)
             self.reset()
+            self.head_to_target()
 
         elif s < self.goal_range:
             reward = 1.
@@ -131,7 +134,7 @@ class ModelFreeAirSimEnv:
             print("*** Goal in at (%.1f, %.1f, %.1f)" % (p[0], p[1], p[2]))
             self.hover()
             self.init = p
-            time.sleep(0.5)
+            self.head_to_target()
 
         else:
             reward = -0.005

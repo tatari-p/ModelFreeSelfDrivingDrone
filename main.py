@@ -12,15 +12,13 @@ model_name = "DeepDeterministicPolicyGradient-0"
 save_path = "./Models/"+model_name+".ckpt"
 restore_from_saved_model = True
 
-fname = "./"+model_name+" "+datetime.datetime.now().strftime("%Y-%m-%d %p %H %M %S")
-
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 
 buffer_size = 2000
 train_size = 30
 num_train_per_epoch = 50
-step = 5
+step = 10
 save_period = 20
 write_meta = not restore_from_saved_model
 
@@ -42,25 +40,17 @@ with tf.Session(config=config) as sess:
 
     print("*** Train of model", model_name, "began at", datetime.datetime.now())
     saver = tf.train.Saver()
-    max_epochs = 5000
+    max_epochs = 3000
 
     env.set_to_drive()
     print("*** Get ready to train...")
 
     train_buffer = []
+    env.head_to_target()
 
     for epoch in range(max_epochs):
-        l_rate_Q = 0.0005
-        l_rate_p = 0.00005
-
-        while True:
-            env.target = np.array([np.random.uniform(-150., 150.), np.random.uniform(-150., 150), -10.], dtype="float32")
-
-            if 0 <= np.arctan2(env.target[1], env.target[0]) <= 6*np.pi/8\
-                    or -6*np.pi/8 <= np.arctan2(env.target[1], env.target[0]) <= 0:
-                break
-
-        env.head_to_target()
+        l_rate_Q = 0.0005*0.5**epoch//200
+        l_rate_p = 0.00005*0.5**epoch//200
 
         print("*** Epoch %d started..." % epoch)
         print("*** Target point was set to (%.1f, %.1f, %.1f)" % (env.target[0], env.target[1], env.target[2]))
@@ -78,14 +68,11 @@ with tf.Session(config=config) as sess:
 
             if episode_step % step == 0:
                 p = env.get_position()
-                v = env.get_velocity()
-                forward = unit(env.target-env.get_position())
                 print("*** Current position is (%.1f, %.1f, %.1f)" % (p[0], p[1], p[2]))
-                print("*** Current velocity is (%.1f, %.1f, %.1f), forwarding (%.1f, %.1f, %.1f)" % (v[0], v[1], v[2], forward[0], forward[1], forward[2]))
 
             episode_step += 1
 
-            if episode_step > 200:
+            if episode_step > 100:
                 reward = -1.
                 done = True
                 print("*** Drone is straying. Environment is reset.")
@@ -103,7 +90,7 @@ with tf.Session(config=config) as sess:
 
         loss_buffer = []
 
-        if len(train_buffer) >= buffer_size/4 and epoch % 5 == 0:
+        if len(train_buffer) >= buffer_size/5 and epoch % 5 == 0:
 
             for _ in range(num_train_per_epoch):
                 batch = random.sample(train_buffer, train_size)
