@@ -4,7 +4,7 @@ Tensorflow implementation of self driving drone using Deep Deterministic Policy 
 
 Microsoft AirSim is needed.
 
-For random target, it achieves about 82% success rate using 18 layer ResNET and 2 layer fully connected only.
+For random target, it achieves about 91% success rate using 18 layer ResNET and 2 layer fully connected only.
 
 It uses depth map for image processing, and I think deeper network, like 34 or 50 layer ResNET, will be needed to use raw RGB input.
 
