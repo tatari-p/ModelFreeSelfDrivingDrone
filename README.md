@@ -1,4 +1,4 @@
-# ModelFreeSelfDrivingDrone
+# PolicyBasedSelfDrivingDrone
 
 Tensorflow implementation of self driving drone using Deep Deterministic Policy Gradient and Galaga method.
 
